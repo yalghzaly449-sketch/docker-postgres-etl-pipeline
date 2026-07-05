@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: etl_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d etl_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  script:
+    image: python:3.10-slim
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: sh -c "pip install --no-cache-dir pandas sqlalchemy psycopg2-binary && python app.py"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
